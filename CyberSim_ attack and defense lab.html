@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CyberSim: attack and defense lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04080f;--s1:#0a1628;--s2:#0e1e36;--b1:#112240;--b2:#1a3a6b;--cy:#00e5ff;--gr:#00ff9d;--rd:#ff2d55;--or:#ff9500;--ye:#ffd60a;--pu:#bf5af2;--tx:#cdd9f0;--t2:#7a9cc0;--mu:#5d7fa8;--mono:"Share Tech Mono",ui-monospace,Consolas,monospace;--hd:Orbitron,"Segoe UI",sans-serif;--bd:Rajdhani,system-ui,sans-serif;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.45 var(--bd);min-height:100vh;overflow-x:hidden;background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);background-size:50px 50px}
+body::before{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.05) 2px 4px);pointer-events:none;z-index:50}
+header{text-align:center;padding:38px 16px 22px}
+.tag{font:11px var(--mono);letter-spacing:5px;color:var(--cy);text-transform:uppercase;display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:12px}
+.tag::before,.tag::after{content:"";width:44px;height:1px;background:linear-gradient(90deg,transparent,var(--cy))}.tag::after{transform:scaleX(-1)}
+h1{font:900 clamp(30px,7vw,60px)/1 var(--hd);letter-spacing:4px;margin:0 0 8px;background:linear-gradient(90deg,var(--cy),#fff 50%,var(--pu));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font:13px var(--mono);color:var(--t2);letter-spacing:2px}
+.status{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--s1);border:1px solid var(--b2);padding:6px 14px;border-radius:4px;font:11px var(--mono);color:var(--gr)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--gr);animation:pl 2s infinite}
+@keyframes pl{0%,100%{box-shadow:0 0 0 0 rgba(0,255,157,.5)}50%{box-shadow:0 0 0 6px rgba(0,255,157,0)}}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+.lbl{font:10px var(--mono);letter-spacing:3px;color:var(--mu);margin:0 0 10px}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:18px}
+.mode{--ac:var(--cy);text-align:left;font:inherit;color:inherit;background:var(--s1);border:1px solid var(--b1);padding:14px;border-radius:6px;cursor:pointer;position:relative;overflow:hidden;transition:.2s}
+.mode::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:var(--ac);transform:scaleX(0);transition:.2s}
+.mode:hover,.mode[aria-selected="true"]{background:var(--s2);border-color:var(--ac);transform:translateY(-2px)}
+.mode:hover::before,.mode[aria-selected="true"]::before{transform:scaleX(1)}
+.mode .ic{font-size:26px;display:block;margin-bottom:6px}.mode b{font:700 12px var(--hd);letter-spacing:1px;color:var(--ac);display:block;margin-bottom:3px}.mode small{font:11px var(--mono);color:var(--mu)}
+button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.sim{display:grid;grid-template-columns:1fr 380px;gap:14px;padding-bottom:30px}
+.panel,.card{background:var(--s1);border:1px solid var(--b2);border-radius:8px;overflow:hidden}
+.ph{background:var(--s2);border-bottom:1px solid var(--b1);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font:700 12px var(--hd);letter-spacing:2px;color:var(--cy)}
+.btn{font:12px var(--mono);letter-spacing:1px;padding:7px 14px;border-radius:4px;border:1px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:.2s}
+.btn:hover:not(:disabled){border-color:var(--cy);color:var(--cy)}
+.btn.p{background:rgba(0,229,255,.1);border-color:var(--cy);color:var(--cy)}.btn.p:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 12px rgba(0,229,255,.3)}
+.btn.r{border-color:var(--rd);color:var(--rd);background:rgba(255,45,85,.1)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+#map{width:100%;height:auto;display:block;border-bottom:1px solid var(--b1)}
+#map line{stroke:var(--b2);stroke-width:1.5;stroke-dasharray:4 5}
+#map line.atk,#map line.hit{stroke:var(--rd);stroke-dasharray:none;filter:drop-shadow(0 0 4px var(--rd))}#map line.blk{stroke:var(--gr);stroke-dasharray:none}
+#map .n rect{fill:var(--s2);stroke:var(--b2);stroke-width:1.5;transition:.25s}
+#map .n.hit rect{stroke:var(--rd);fill:rgba(255,45,85,.2)}#map .n.blk rect{stroke:var(--gr);fill:rgba(0,255,157,.12)}
+#map text{font:12px var(--mono);fill:var(--tx)}
+.opts{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--b1);background:rgba(0,229,255,.04);font:11px var(--mono);color:var(--mu)}.opts label{display:flex;align-items:center;gap:6px}.opts select{background:#020508;color:var(--tx);border:1px solid var(--b2);border-radius:4px;padding:4px 6px;font:12px var(--mono);max-width:100%}.opts .btn{padding:4px 10px}.it .btn+.chip,.it span .btn{margin-left:6px}
+.body{padding:14px}
+.grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.it{background:#020508;border:1px solid var(--b1);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px;transition:border-color .2s}
+.it:hover{border-color:var(--b2)}.it.own{border-color:var(--gr)}
+.it b{font:700 11px var(--hd);letter-spacing:1px;color:var(--cy)}.it.a b{color:var(--or)}
+.it small{flex:1;color:var(--t2);font-size:14px;line-height:1.35}
+.chip{display:inline-block;font:10px var(--mono);padding:1px 7px;border-radius:3px;border:1px solid var(--b2);color:var(--mu);margin:0 4px 3px 0}
+.steps{padding:11px 16px;border-top:1px solid var(--b1);display:flex;align-items:center;gap:10px}
+.dots{display:flex;gap:6px;flex:1;flex-wrap:wrap}.dot{width:8px;height:8px;border-radius:50%;background:var(--b2)}
+.dot.done{background:var(--gr);box-shadow:0 0 6px var(--gr)}.dot.now{background:var(--cy);box-shadow:0 0 8px var(--cy);animation:pl 1s infinite}.dot.bad{background:var(--rd)}
+.cnt{font:10px var(--mono);color:var(--mu);white-space:nowrap}
+.col{display:flex;flex-direction:column;gap:12px}
+.ch{background:var(--s2);border-bottom:1px solid var(--b1);padding:9px 14px;font:700 11px var(--hd);letter-spacing:2px;color:var(--cy)}
+.cb{padding:14px}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px;font:11px var(--mono);color:var(--mu)}.stats strong{display:block;font:700 18px var(--hd);color:var(--tx)}
+.m{margin-bottom:9px;font-size:14px;color:var(--t2)}.m span{float:right;font:12px var(--mono);color:var(--tx)}
+.bar{height:8px;background:var(--b1);border-radius:4px;overflow:hidden;margin-top:3px;clear:both}.bar i{display:block;height:100%;background:var(--gr);transition:width .5s;box-shadow:0 0 8px currentColor}
+.bar i.mid{background:var(--ye)}.bar i.low{background:var(--rd)}.bar i.atk{background:var(--rd)}
+.term{background:#020508;border:1px solid var(--b1);border-radius:6px;padding:12px;margin:12px;font:12px/1.8 var(--mono);height:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.ln{color:var(--t2);word-break:break-word}.ln.info{color:var(--cy)}.ln.warn{color:var(--or)}.ln.danger{color:var(--rd)}.ln.success{color:var(--gr)}
+.cur{display:inline-block;width:8px;height:13px;background:var(--cy);vertical-align:middle;animation:bk 1s infinite}@keyframes bk{50%{opacity:0}}
+.sev{display:inline-block;font:10px var(--mono);letter-spacing:2px;padding:3px 10px;border-radius:3px;margin-bottom:8px}
+.crit{color:var(--rd);border:1px solid var(--rd);background:rgba(255,45,85,.15)}.high{color:var(--or);border:1px solid var(--or);background:rgba(255,149,0,.15)}.med{color:var(--ye);border:1px solid var(--ye);background:rgba(255,214,10,.12)}
+#bt{font:700 14px var(--hd);letter-spacing:1px;color:var(--cy);margin-bottom:6px}#bd{color:var(--t2);font-size:15px;line-height:1.55}
+.defs{list-style:none;margin:8px 0 0;padding:0}.defs li{font-size:14px;color:var(--t2);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);display:flex;gap:8px}.defs li::before{content:"▸";color:var(--gr)}
+.scr{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--b1);vertical-align:top;color:var(--t2)}th{font:11px var(--mono);letter-spacing:1px;color:var(--cy)}td b{color:var(--tx)}
+.hide{display:none!important}
+footer{text-align:center;padding:26px 16px;border-top:1px solid var(--b1);font:11px var(--mono);color:var(--mu);background:#070d1a}footer a{color:var(--cy)}
+@media(max-width:900px){.sim{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header>
+ <div class="tag">Educational cybersecurity tool</div>
+ <h1>CYBERSIM</h1>
+ <div class="sub">Interactive cyber attack and defense simulator</div>
+ <div class="status"><span class="pulse"></span>SYSTEM ONLINE · 14 ATTACKS · 16 CONTROLS LOADED</div>
+</header>
+<div class="wrap">
+ <p class="lbl">// SELECT MODE</p>
+ <div class="modes" id="modes" role="tablist">
+  <button class="mode" role="tab" data-m="d" style="--ac:var(--cy)"><span class="ic">🛡️</span><b>DEFENDER</b><small>Protect the network for 12 rounds</small></button>
+  <button class="mode" role="tab" data-m="a" style="--ac:var(--rd)"><span class="ic">⚔️</span><b>ATTACKER</b><small>Breach a hidden, hardening target</small></button>
+  <button class="mode" role="tab" data-m="l" style="--ac:var(--pu)"><span class="ic">📚</span><b>REFERENCE</b><small>Every attack and its counters</small></button>
+ </div>
+
+ <div class="sim" id="sim">
+  <div class="panel">
+   <div class="ph"><span id="pt">DEFENDER MODE</span><span><button class="btn" id="rb">↺ RESET</button> <button class="btn p" id="pb">END ROUND ▶</button></span></div>
+   <div class="opts" id="opts"></div>
+   <svg id="map" viewBox="0 0 780 232" role="img" aria-label="Network map: the attacker and five targets"></svg>
+   <div class="body"><div class="grid" id="body"></div></div>
+   <div class="steps"><div class="dots" id="dots"></div><div class="cnt" id="cnt"></div></div>
+  </div>
+  <div class="col">
+   <div class="card"><div class="ch">📡 NETWORK STATUS</div><div class="cb" id="hl"></div></div>
+   <div class="card"><div class="ch">💻 ATTACK LOG</div>
+    <div class="term" id="td"></div><div class="term hide" id="ta"></div></div>
+   <div class="card"><div class="ch">⚠️ THREAT BRIEF</div><div class="cb"><div id="bs"></div><div id="bt">No attack yet</div><div id="bd">Play a turn to see how each attack works and what stops it.</div><ul class="defs" id="bl"></ul></div></div>
+  </div>
+ </div>
+
+ <div id="ref" class="hide" style="padding-bottom:30px">
+  <div class="panel"><div class="ph">ATTACKS AND THE CONTROLS THAT COUNTER THEM</div><div class="scr"><table id="lt"></table></div></div>
+  <div class="panel" style="margin-top:12px"><div class="ph">SECURITY CONTROLS</div><div class="scr"><table id="lc"></table></div></div>
+ </div>
+</div>
+<footer><div style="font:13px Orbitron,sans-serif;color:var(--t2);margin-bottom:6px">CYBERSIM — attack and defense lab</div>
+For educational purposes only · UI style inspired by <a href="https://github.com/MacAwad/cybersim" target="_blank" rel="noopener">CyberSim by Mahmoud Awad</a> (CC BY-NC 4.0)</footer>
+<script>
+const $=id=>document.getElementById(id);
+const CTRL=[["firewall","Firewall",30,"Allows or denies traffic by IP, port and protocol."],["ids","IDS/IPS",40,"Detects and blocks known attack signatures and anomalies."],["waf","Web app firewall",40,"Inspects HTTP traffic for injection, scripting and bots."],["mfa","Multi-factor auth",30,"A second factor makes stolen passwords far less useful."],["patch","Patch management",25,"Closes known vulnerabilities quickly."],["backup","Offline backups",30,"Restores data after ransomware or corruption."],["tls","TLS and VPN",20,"Encrypts data in transit so sniffing yields nothing."],["train","Security training",25,"Helps staff spot phishing and pretexting."],["edr","EDR and antivirus",40,"Detects malicious behaviour on endpoints."],["rate","Rate limiting",20,"Throttles requests; slows brute force and floods."],["seg","Network segmentation",45,"Limits lateral movement between zones."],["lp","Least privilege",30,"Accounts get only the access they need."],["siem","SIEM monitoring",45,"Correlates logs to spot attacks early."],["val","Input validation",20,"Sanitises and parameterises user input."],["mail","Email filtering",25,"Blocks spam, malicious links and attachments."],["enc","Encryption at rest",25,"Stolen data stays unreadable."]].map(a=>({id:a[0],n:a[1],cost:a[2],d:a[3]}));
+const CN=Object.fromEntries(CTRL.map(c=>[c.id,c.n]));
+const CIA={C:"Confidentiality",I:"Integrity",A:"Availability"};
+const ATK=[
+["phish","Phishing","Social engineering","Email","C",6,"A fake email tricks a user into entering credentials or opening a payload.",{train:.5,mfa:.35,mail:.45,edr:.1}],
+["sqli","SQL injection","Web application","Database","C",8,"Unsanitised input is run as part of a database query, exposing or altering data.",{val:.6,waf:.45,lp:.2,enc:.15}],
+["xss","Cross-site scripting","Web application","Web server","I",5,"Malicious script injected into a page runs in other users’ browsers.",{val:.5,waf:.35,patch:.1}],
+["ddos","DDoS flood","Network","Web server","A",7,"Huge volumes of requests exhaust bandwidth or server resources.",{rate:.45,firewall:.2,ids:.2}],
+["ransom","Ransomware","Malware","Endpoints","A",9,"Malware encrypts files and demands payment for the key.",{backup:.6,edr:.4,seg:.25,train:.2}],
+["mitm","Man-in-the-middle","Network","Network","C",6,"An attacker on the path reads or alters traffic, for example on open Wi-Fi.",{tls:.65,ids:.15}],
+["brute","Brute force and credential stuffing","Authentication","Endpoints","C",5,"Automated guessing of passwords, or reuse of leaked ones.",{mfa:.6,rate:.35,siem:.1}],
+["trojan","Trojan and spyware","Malware","Endpoints","I",6,"Software disguised as legitimate quietly steals data or opens a backdoor.",{edr:.5,train:.25,patch:.15}],
+["privesc","Privilege escalation","Post-exploitation","Database","I",7,"An attacker with a low-level account abuses a flaw or misconfiguration to gain admin rights.",{lp:.5,patch:.3,siem:.15}],
+["zero","Zero-day exploit","Vulnerability","Web server","I",9,"An unknown flaw is exploited before any patch exists, so only layered defence helps.",{ids:.3,seg:.25,edr:.2,siem:.15,waf:.15}],
+["spoof","ARP and DNS spoofing","Network","Network","I",5,"Forged ARP or DNS replies redirect victims to an attacker-controlled host.",{ids:.35,seg:.3,tls:.2}],
+["insider","Insider threat","Human","Database","C",7,"A trusted employee misuses legitimate access to copy or damage data.",{lp:.45,siem:.35,enc:.2}],
+["pretext","Pretexting and vishing","Social engineering","Endpoints","C",6,"A caller poses as IT or a manager to talk someone into giving access.",{train:.6,mfa:.15}],
+["unpatched","Unpatched known CVE","Vulnerability","Web server","I",7,"Attackers scan for software with published, unfixed vulnerabilities.",{patch:.7,waf:.15,ids:.1}]
+].map(a=>({id:a[0],n:a[1],cat:a[2],tg:a[3],cia:a[4],sev:a[5],how:a[6],c:a[7]}));
+const TG=["Email","Web server","Network","Endpoints","Database"];
+const pct=x=>Math.round(x*100)+"%";
+const ctrs=(a,own)=>Object.keys(a.c).sort((x,y)=>a.c[y]-a.c[x]).map(k=>CN[k]+(own&&own.has(k)?" ✓":"")).join(", ");
+function resolve(a,own,lv,boost){lv=lv||{};const rel=Object.keys(a.c).filter(k=>own.has(k));let m=1;rel.forEach(k=>m*=1-Math.min(.9,a.c[k]*(lv[k]?1.35:1)));const p=Math.min(.97,(.5+.05*a.sev)*m*(boost||1));return{hit:Math.random()<p,p,rel}}
+
+/* network map */
+$("map").innerHTML=TG.map((n,i)=>{const y=12+i*43;return '<line id="l'+i+'" x1="160" y1="116" x2="560" y2="'+(y+17)+'"/><g class="n" id="n'+i+'"><rect x="560" y="'+y+'" width="190" height="34" rx="5"/><text x="655" y="'+(y+22)+'" text-anchor="middle">'+n+'</text></g>'}).join("")+'<g class="n"><rect x="30" y="92" width="130" height="48" rx="5"/><text x="95" y="121" text-anchor="middle">☠ Attacker</text></g>';
+function flash(i,cls,delay){setTimeout(()=>{$("n"+i).setAttribute("class","n "+cls);$("l"+i).setAttribute("class",cls==="hit"?"hit":"blk");setTimeout(()=>{$("n"+i).setAttribute("class","n");$("l"+i).removeAttribute("class")},1200)},delay)}
+
+/* shared UI */
+let M="d";
+function L(m,cls,txt){const t=$("t"+m),d=document.createElement("div");d.className="ln "+cls;d.textContent=txt;t.appendChild(d);t.scrollTop=t.scrollHeight}
+function boot(m,msg){$("t"+m).innerHTML="";L(m,"info","[CYBERSIM] System initialised...");L(m,"",msg)}
+function brief(a,r){const s=a.sev>=8?["crit","CRITICAL"]:a.sev>=6?["high","HIGH"]:["med","MEDIUM"];
+ $("bs").innerHTML='<span class="sev '+s[0]+'">'+s[1]+'</span> <span class="chip">'+a.cat+'</span><span class="chip">Hits '+CIA[a.cia].toLowerCase()+'</span>';
+ $("bt").textContent=a.n+" → "+a.tg;$("bd").textContent=a.how+" Chance of success: "+pct(r.p)+".";
+ $("bl").innerHTML=Object.keys(a.c).sort((x,y)=>a.c[y]-a.c[x]).map(k=>"<li>"+CN[k]+" — "+CTRL.find(c=>c.id===k).d+"</li>").join("")}
+function dots(total,cur,bad){$("dots").innerHTML=Array.from({length:total},(_,i)=>'<span class="dot '+(i<cur-1?"done":i===cur-1?"now":"")+'"></span>').join("")}
+function meter(label,v,max,cls){const w=Math.max(0,Math.min(100,v/max*100));return '<div class="m">'+label+'<span>'+Math.round(v)+'</span><div class="bar"><i class="'+(cls||(w<35?"low":w<65?"mid":""))+'" style="width:'+w+'%"></i></div></div>'}
+
+/* options */
+const OPT={d:{diff:1,rounds:12},a:{diff:1,turns:10,appr:"agg"}};
+const DN=["Easy","Normal","Hard"],DB=[.8,1,1.2],DI=[50,40,30];
+function sel(id,label,vals,cur){return '<label>'+label+'<select data-o="'+id+'">'+vals.map(v=>'<option value="'+v[0]+'"'+(String(v[0])===String(cur)?" selected":"")+'>'+v[1]+'</option>').join("")+'</select></label>'}
+function optsDraw(){
+ if(M==="d")$("opts").innerHTML=sel("dd","Difficulty",DN.map((n,i)=>[i,n]),OPT.d.diff)+sel("dr","Rounds",[[8,"8"],[12,"12"],[20,"20"]],OPT.d.rounds)+'<span>Incident response (−20 budget, +15 health):</span>'+Object.keys(CIA).map(k=>'<button class="btn" data-rep="'+k+'" '+(D.over||D.b<20||D.m[k]>=100?"disabled":"")+'>Repair '+CIA[k].toLowerCase()+'</button>').join("");
+ else $("opts").innerHTML=sel("ad","Target hardness",DN.map((n,i)=>[i,n]),OPT.a.diff)+sel("at","Turns",[[8,"8"],[10,"10"],[14,"14"]],OPT.a.turns)+sel("aa","Approach",[["agg","Aggressive: +25% success, target hardens fast"],["stl","Stealth: target hardens slowly"]],OPT.a.appr)+'<button class="btn r" data-recon="1" '+(A.over?"disabled":"")+'>🔍 Recon scan (uses a turn)</button>'}
+
+/* defender */
+let D;
+function dInit(){const o=OPT.d;D={r:1,b:100,own:new Set(),lv:{},m:{C:100,I:100,A:100},k:0,over:false,R:o.rounds};boot("d","Difficulty "+DN[o.diff]+", "+o.rounds+" rounds. Deploy controls, then end the round");$("bs").innerHTML="";dDraw()}
+function dDraw(){
+ $("body").innerHTML=CTRL.map(c=>{const o=D.own.has(c.id),l=D.lv[c.id],up=Math.ceil(c.cost*.8);return '<div class="it'+(o?" own":"")+'"><b>'+c.n.toUpperCase()+'</b><small>'+c.d+'</small>'+(!o?'<button class="btn p" data-b="'+c.id+'" '+(D.b<c.cost||D.over?"disabled":"")+'>DEPLOY · '+c.cost+'</button>':'<span><span class="chip" style="color:var(--gr);border-color:var(--gr)">ACTIVE'+(l?" LV2":"")+'</span>'+(l?"":'<button class="btn" data-u="'+c.id+'" '+(D.b<up||D.over?"disabled":"")+'>UPGRADE · '+up+'</button>')+'</span>')+'</div>'}).join("");
+ $("hl").innerHTML='<div class="stats"><div>BUDGET<strong>'+D.b+'</strong></div><div>BLOCKED<strong>'+D.k+'</strong></div><div>ROUND<strong>'+Math.min(D.r,D.R)+'/'+D.R+'</strong></div></div>'+Object.keys(CIA).map(k=>meter(CIA[k],D.m[k],100)).join("");
+ $("cnt").textContent="ROUND "+Math.min(D.r,D.R)+" / "+D.R;dots(D.R,Math.min(D.r,D.R));$("pb").disabled=D.over;if(M==="d")optsDraw()}
+function pick(n){const w=ATK.map(a=>{let m=1;Object.keys(a.c).forEach(k=>{if(D.own.has(k))m*=1-a.c[k]});return 1+2*m});const out=[];for(let i=0;i<n;i++){let t=w.reduce((s,x)=>s+x,0)*Math.random(),j=0;while(t>w[j]){t-=w[j];j++}out.push(ATK[j])}return out}
+function dEnd(){
+ if(D.over)return;const o=OPT.d,n=1+o.diff+(D.r>=Math.ceil(D.R*.6)?1:0),miss={};L("d","info","> ROUND "+D.r+": "+n+" attacks incoming");
+ pick(n).forEach((a,i)=>{const r=resolve(a,D.own,D.lv,DB[o.diff]),ti=TG.indexOf(a.tg);L("d","warn","[INCOMING] "+a.n+" → "+a.tg+" (success chance "+pct(r.p)+")");
+  if(r.hit){const dmg=a.sev*3+Math.floor(Math.random()*5);D.m[a.cia]-=dmg;Object.keys(a.c).forEach(k=>{if(!D.own.has(k))miss[k]=(miss[k]||0)+a.c[k]});
+   L("d","danger","[BREACH] "+CIA[a.cia]+" −"+dmg+". Best counters: "+ctrs(a,D.own));flash(ti,"hit",i*850)}
+  else{D.k++;L("d","success","[BLOCKED] "+(r.rel.length?"Stopped by "+r.rel.map(k=>CN[k]).join(", "):"Lucky: no control applies, but the attack failed"));flash(ti,"blk",i*850)}
+  brief(a,r)});
+ D.r++;D.b+=DI[o.diff];const dead=Object.keys(D.m).find(k=>D.m[k]<=0);
+ if(dead||D.r>D.R){D.over=true;const avg=Math.round(Object.values(D.m).reduce((s,v)=>s+Math.max(0,v),0)/3),ms=Object.keys(miss).sort((x,y)=>miss[y]-miss[x]).slice(0,3).map(k=>CN[k]).join(", ");
+  L("d",dead?"danger":"success",dead?"[GAME OVER] "+CIA[dead]+" reached zero. Network compromised.":"[MISSION COMPLETE] Network survived with "+avg+"% average health.");
+  L("d","info","[DEBRIEF] Blocked "+D.k+" attacks."+(ms?" Most useful missing controls: "+ms+".":" No breaches slipped through."))}
+ dDraw()}
+
+/* attacker */
+let A;
+function aInit(){const o=OPT.a,p=CTRL.map(c=>c.id).sort(()=>Math.random()-.5),k=[1,2,4][o.diff];A={t:1,p:0,own:new Set(p.slice(0,k)),pool:p.slice(k),seen:new Set(),over:false,T:o.turns};boot("a","Target hardness "+DN[o.diff]+", "+o.turns+" turns. Defences unknown");aDraw()}
+function aDraw(){
+ $("body").innerHTML=ATK.map(a=>'<div class="it a"><b>'+a.n.toUpperCase()+'</b><small><span class="chip">'+a.cat+'</span><span class="chip">→ '+a.tg+'</span></small><button class="btn r" data-a="'+a.id+'" '+(A.over?"disabled":"")+'>LAUNCH · +'+a.sev*2+'</button></div>').join("");
+ $("hl").innerHTML='<div class="stats"><div>TURN<strong>'+Math.min(A.t,A.T)+'/'+A.T+'</strong></div><div>BREACH<strong>'+A.p+'/60</strong></div><div>DETECTED<strong>'+A.seen.size+'</strong></div></div>'+meter("Breach progress",A.p,60,"atk");
+ $("cnt").textContent="TURN "+Math.min(A.t,A.T)+" / "+A.T;dots(A.T,Math.min(A.t,A.T));if(M==="a")optsDraw()}
+function harden(extra){const agg=OPT.a.appr==="agg";let n=(agg||A.t%2===0?1:0)+(agg&&extra?1:0);while(n-->0&&A.pool.length)A.own.add(A.pool.shift())}
+function aEnd(){if(A.p>=60||A.t>A.T){A.over=true;L("a",A.p>=60?"success":"danger",(A.p>=60?"[MISSION COMPLETE] Target breached. ":"[MISSION FAILED] Target held out. ")+"Score "+A.p+"/60.");L("a","info","[REVEAL] Hidden controls: "+[...A.own].map(k=>CN[k]).join(", "))}aDraw()}
+function aGo(id){const a=ATK.find(x=>x.id===id),r=resolve(a,A.own,null,OPT.a.appr==="agg"?1.25:1),ti=TG.indexOf(a.tg);L("a","warn","> TURN "+A.t+": launching "+a.n+" → "+a.tg);
+ if(r.hit){A.p+=a.sev*2;L("a","success","[SUCCESS] +"+a.sev*2+" points. "+(r.rel.length?"Partial defences present ("+r.rel.map(k=>CN[k]).join(", ")+") but not enough.":"Nothing countered this attack."));flash(ti,"hit",0)}
+ else{r.rel.forEach(k=>A.seen.add(k));L("a","danger","[BLOCKED] "+(r.rel.length?"Detected: "+r.rel.map(k=>CN[k]).join(", ")+". Try an attack these do not counter.":"Bad luck: no counter in place, the attempt still failed."));flash(ti,"blk",0)}
+ brief(a,r);harden(!r.hit);A.t++;aEnd()}
+function recon(){if(A.over)return;L("a","warn","> TURN "+A.t+": recon scan");const h=[...A.own].filter(k=>!A.seen.has(k));if(h.length){const k=h[Math.floor(Math.random()*h.length)];A.seen.add(k);L("a","info","[RECON] Found "+CN[k]+" on the target")}else L("a","info","[RECON] No further controls found");harden(false);A.t++;aEnd()}
+
+/* wiring */
+$("body").onclick=e=>{const d=e.target.dataset;
+ if(d.b&&!D.over){const c=CTRL.find(x=>x.id===d.b);if(D.b>=c.cost){D.b-=c.cost;D.own.add(d.b);L("d","info","[DEPLOY] "+c.n+" online (−"+c.cost+")");dDraw()}}
+ if(d.u&&!D.over){const c=CTRL.find(x=>x.id===d.u),up=Math.ceil(c.cost*.8);if(D.b>=up&&!D.lv[d.u]){D.b-=up;D.lv[d.u]=1;L("d","info","[UPGRADE] "+c.n+" level 2: +35% effectiveness (−"+up+")");dDraw()}}
+ if(d.a&&!A.over)aGo(d.a)};
+$("opts").onclick=e=>{const d=e.target.dataset;
+ if(d.rep&&!D.over&&D.b>=20){D.b-=20;D.m[d.rep]=Math.min(100,D.m[d.rep]+15);L("d","info","[RESPONSE] "+CIA[d.rep]+" +15 health (−20)");dDraw()}
+ if(d.recon)recon()};
+$("opts").onchange=e=>{const o=e.target.dataset.o,v=e.target.value;if(!o)return;
+ if(o==="aa"){OPT.a.appr=v;L("a","info","[OPTION] Approach: "+(v==="agg"?"aggressive":"stealth"));return}
+ ({dd:()=>OPT.d.diff=+v,dr:()=>OPT.d.rounds=+v,ad:()=>OPT.a.diff=+v,at:()=>OPT.a.turns=+v})[o]();o[0]==="d"?dInit():aInit()};
+$("pb").onclick=dEnd;$("rb").onclick=()=>{M==="d"?dInit():aInit()};
+function setMode(m){M=m;document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-selected",b.dataset.m===m));
+ $("sim").classList.toggle("hide",m==="l");$("ref").classList.toggle("hide",m!=="l");if(m==="l")return;
+ $("pt").textContent=m==="d"?"DEFENDER MODE":"ATTACKER MODE";$("pb").classList.toggle("hide",m!=="d");
+ $("td").classList.toggle("hide",m!=="d");$("ta").classList.toggle("hide",m!=="a");m==="d"?dDraw():aDraw()}
+$("modes").onclick=e=>{const b=e.target.closest(".mode");if(b)setMode(b.dataset.m)};
+$("lt").innerHTML="<tr><th>ATTACK</th><th>CATEGORY</th><th>TARGET</th><th>HITS</th><th>HOW IT WORKS</th><th>COUNTERS</th></tr>"+ATK.map(a=>"<tr><td><b>"+a.n+"</b></td><td>"+a.cat+"</td><td>"+a.tg+"</td><td>"+CIA[a.cia]+"</td><td>"+a.how+"</td><td>"+ctrs(a)+"</td></tr>").join("");
+$("lc").innerHTML="<tr><th>CONTROL</th><th>WHAT IT DOES</th></tr>"+CTRL.map(c=>"<tr><td><b>"+c.n+"</b></td><td>"+c.d+"</td></tr>").join("");
+dInit();aInit();setMode("d");
+</script></body></html>
